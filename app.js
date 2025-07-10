@@ -12,6 +12,7 @@ app.use(express.json());
 
 // Routes
 app.use('/api/auth', require('./routes/authRoutes'));
+app.use('/api/boards',require('./routes/boardRoutes'));
 
 app.get('/', (req, res) => {
     res.send('Boardium API is running 🚀');
