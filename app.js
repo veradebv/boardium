@@ -11,21 +11,25 @@ app.use(cors());
 app.use(express.json());
 
 // Routes
-app.use('/api/auth', require('./routes/authRoutes'));   
-app.use('/api/boards',require('./routes/boardRoutes'));
+const authRoutes = require('./routes/authRoutes');
+const boardRoutes = require('./routes/boardRoutes');
 
 app.use('/api/auth', authRoutes);
+app.use('/api/boards', boardRoutes);
 
+// Root test
 app.get('/', (req, res) => {
-    res.send('Boardium API is running 🚀');
+  res.send('Boardium API is running 🚀');
 });
 
+// Protected test route
 app.get('/api/secret', authMiddleware, (req, res) => {
-    res.json({
-        message: 'You are authenticated ✅',
-        userId: req.user 
-    });
+  res.json({
+    message: 'You are authenticated ✅',
+    userId: req.user,
+  });
 });
 
+// Start server
 const PORT = process.env.PORT || 8080;
-app.listen(PORT, () => console.log(`Server started on port ${PORT}`));
+app.listen(PORT, () => console.log(`🚀 Server started on port ${PORT}`));
