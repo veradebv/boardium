@@ -1,61 +1,82 @@
+// controllers/authController.js
 const pool = require('../config/db');
-const bcrypt = require('bcryptjs');
+const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
 
-// REGISTER
+// REGISTER user
 exports.register = async (req, res) => {
-  const { username, email, password } = req.body;
-
   try {
-    // Check if user already exists
-    const existingUser = await pool.query('SELECT * FROM users WHERE email = $1', [email]);
-    if (existingUser.rows.length > 0) {
-      return res.status(400).json({ message: 'Email already in use' });
+    const { username, email, password } = req.body;
+
+    if (!username || !email || !password) {
+      return res.status(400).json({ message: "All fields are required" });
     }
 
-    // Hash password
-    const salt = await bcrypt.genSalt(10);
-    const passwordHash = await bcrypt.hash(password, salt);
+    // check if user already exists
+    const existingUser = await pool.query(
+      "SELECT * FROM users WHERE email = $1 OR username = $2",
+      [email, username]
+    );
+    if (existingUser.rows.length > 0) {
+      return res.status(400).json({ message: "Email or username already exists" });
+    }
 
-    // Insert user
+    // hash password
+    const hashedPassword = await bcrypt.hash(password, 10);
+
+    // insert into DB (use password_hash column)
     const result = await pool.query(
-      'INSERT INTO users (username, email, password_hash) VALUES ($1, $2, $3) RETURNING id, username, email',
-      [username, email, passwordHash]
+      "INSERT INTO users (username, email, password_hash) VALUES ($1, $2, $3) RETURNING id, username, email",
+      [username, email, hashedPassword]
     );
 
-    const user = result.rows[0];
+    res.status(201).json({
+      message: "User registered successfully",
+      user: result.rows[0]
+    });
 
-    // Generate JWT
-    const token = jwt.sign({ userId: user.id }, process.env.JWT_SECRET, { expiresIn: '7d' });
-
-    res.status(201).json({ token, user });
-  } catch (err) {
-    console.error('Register error:', err);
-    res.status(500).json({ message: 'Server Error' });
+  } catch (error) {
+    console.error("Register error:", error);
+    res.status(500).json({ message: "Server error" });
   }
 };
 
-// LOGIN
+// LOGIN user
 exports.login = async (req, res) => {
-  const { email, password } = req.body;
-
   try {
-    const result = await pool.query('SELECT * FROM users WHERE email = $1', [email]);
-    const user = result.rows[0];
+    const { email, password } = req.body;
 
-    if (!user) {
-      return res.status(400).json({ message: 'Invalid credentials' });
+    if (!email || !password) {
+      return res.status(400).json({ message: "All fields are required" });
     }
 
-    // NOTE: column is password_hash
+    // find user by email
+    const userResult = await pool.query(
+      "SELECT * FROM users WHERE email = $1",
+      [email]
+    );
+
+    if (userResult.rows.length === 0) {
+      return res.status(400).json({ message: "Invalid credentials" });
+    }
+
+    const user = userResult.rows[0];
+
+    // compare password with stored hash
     const isMatch = await bcrypt.compare(password, user.password_hash);
     if (!isMatch) {
-      return res.status(400).json({ message: 'Invalid credentials' });
+      return res.status(400).json({ message: "Invalid credentials" });
     }
 
-    const token = jwt.sign({ userId: user.id }, process.env.JWT_SECRET, { expiresIn: '7d' });
+    // generate JWT
+    const token = jwt.sign(
+      { id: user.id, username: user.username, email: user.email },
+      process.env.JWT_SECRET,
+      { expiresIn: "1h" }
+    );
 
     res.json({
+      message: "Login successful",
       token,
       user: {
         id: user.id,
@@ -63,8 +84,9 @@ exports.login = async (req, res) => {
         email: user.email
       }
     });
-  } catch (err) {
-    console.error('Login error:', err);
-    res.status(500).json({ message: 'Server error' });
+
+  } catch (error) {
+    console.error("Login error:", error);
+    res.status(500).json({ message: "Server error" });
   }
 };
