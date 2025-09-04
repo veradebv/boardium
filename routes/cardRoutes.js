@@ -5,7 +5,7 @@ const { createCard, updateCard, updateCardsOrder, deleteCard } = require('../con
 
 router.post('/', auth, createCard);
 router.put('/:id', auth, updateCard);
-router.put('/order', auth, updateCardOrder);
+router.put('/order', auth, updateCardsOrder);
 router.delete('/:id', auth, deleteCard);
 
 module.exports = router;

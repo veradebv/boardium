@@ -1,7 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const auth = require('../middleware/authMiddleware');
-const{ createList, udpateList, updateListOrder, deleteList } = require('../controllers/listController');
+const{ createList, updateList, updateListOrder, deleteList } = require('../controllers/listController');
 
 router.post('/', auth, createList);
 router.put('/:id', auth, updateList);

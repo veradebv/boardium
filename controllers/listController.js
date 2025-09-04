@@ -21,7 +21,7 @@ exports.createList = async (req, res) => {
 exports.updateList = async (req,res) => {
     try {
         const { title, order } = req.body;
-        const list = await List.findByIdAndUpdate(req.params._id, { title, order }, { new: true });
+        const list = await List.findByIdAndUpdate(req.params.id, { title, order }, { new: true });
         res.json(list);
     
     } catch (err) {
@@ -29,7 +29,7 @@ exports.updateList = async (req,res) => {
     }
 };
 
-exports.updaListOrder = async (req, res) => {
+exports.updateListOrder = async (req, res) => {
     try {
         const { lists } = req.body;
         const ops = lists.map(l => List.updateOne({ _id: l.id }, { order: l.order }));
